@@ -4,8 +4,8 @@ import baidulogin
 import requests, urllib, re, json, time
 import getpass
 
-#签到延时，单位为秒，最好不要小于1s以避开验证码
-latency = 1
+#签到延时，单位为秒，最好不要小于2s以避开验证码
+latency = 2
 
 headers = baidulogin.headers
 headers['Host'] = 'tieba.baidu.com'
