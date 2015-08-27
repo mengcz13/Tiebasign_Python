@@ -4,6 +4,8 @@ import baidulogin
 import requests, urllib, re, json, time
 import getpass
 
+import sendlogbyemail
+
 #签到延时，单位为秒，最好不要小于2s以避开验证码
 latency = 2
 
@@ -42,6 +44,7 @@ class AutoSign(object):
 		self.__headersforlist = headers
 		self.__headersforlist['Cookie'] = 'BDUSS='+self.__BDUSS#手工填写cookies
 		self.__tiebalist = self.fetch_list_all()
+		self.log = u''
 
 	def fetch_list_singlepage(self, singleurl):
 		likesource = requests.get(singleurl, headers=self.__headersforlist).content
@@ -89,16 +92,21 @@ class AutoSign(object):
 			total = total + 1
 			if (status['stat'] == 0):
 				print u'贴吧：%s 签到成功！'%(status['name'])
+				self.log = self.log + u'贴吧：%s 签到成功！\n'%(status['name'])
 				succ = succ + 1
 			elif (status['stat'] == 1101):
 				print u'贴吧：%s 今天已签到！'%(status['name'])
+				self.log = self.log + u'贴吧：%s 今天已签到！\n'%(status['name'])
 				signed = signed + 1
 			else:
 				print u'贴吧：%s 未知错误，错误码：%d！提示信息：%s'%(status['name'], status['stat'], status['info'])
+				self.log = self.log + u'贴吧：%s 未知错误，错误码：%d！提示信息：%s \n'%(status['name'], status['stat'], status['info'])
 				if (status['stat'] == 1010):
 					print u'可能此贴吧已被和谐！'
+					self.log = self.log + u'可能此贴吧已被和谐！\n'
 				fail = fail + 1
 		print u'共操作%d个贴吧，其中成功%d个，失败%d个，之前已签%d个！'%(total, succ, fail, signed)
+		self.log = self.log + u'共操作%d个贴吧，其中成功%d个，失败%d个，之前已签%d个！\n'%(total, succ, fail, signed)
 
 if (__name__=='__main__'):
 	print u'请输入贴吧用户名：'
@@ -107,3 +115,9 @@ if (__name__=='__main__'):
 	password = getpass.getpass()
 	asrobot = AutoSign(username, password)
 	asrobot.sign_all()
+
+	#email
+	logsender = sendlogbyemail.EmailSender('senderemail', 'senderpw', 'receiveremail', 'smtp.163.com')
+	logtimestring = time.strftime('%Y_%m_%d %H:%M:%S',time.localtime(time.time())) + '__TiebaAutoSignLog'
+	logsender.packPlainText(asrobot.log, 'TiebaSigner', 'TiebaUser', logtimestring)
+	logsender.send()
